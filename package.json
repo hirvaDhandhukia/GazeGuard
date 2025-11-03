@@ -31,7 +31,8 @@
     "key": "$CRX_PUBLIC_KEY",
     "permissions": [
       "cookies",
-      "storage"
+      "storage",
+      "windows"
     ],
     "host_permissions": [
       "http://localhost/*",

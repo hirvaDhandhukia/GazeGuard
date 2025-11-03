@@ -26,9 +26,7 @@ function IndexPopup() {
       publishableKey={PUBLISHABLE_KEY}
       afterSignOutUrl={`${EXTENSION_URL}/popup.html`}
       signInFallbackRedirectUrl={`${EXTENSION_URL}/popup.html`}
-      signUpFallbackRedirectUrl={`${EXTENSION_URL}/popup.html`}
-      signInForceRedirectUrl={`${EXTENSION_URL}/popup.html`}
-      signUpForceRedirectUrl={`${EXTENSION_URL}/popup.html`}>
+      signUpFallbackRedirectUrl={`${EXTENSION_URL}/popup.html`}>
       <div
         className="plasmo-flex plasmo-items-center plasmo-justify-center"
         style={{ height: "25rem", width: "40rem" }}>
