@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "DEV | Gazeguard",
+  "version": "0.0.1",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvLOPbs3RFAEYK/D0XHa/TUenRztTV2Kt5Wf5S8bvQsRR1ehCjTYBluLleA1jXtMyV6xaETs2YQqiNxwNMKCK7xB/1gHjTFqhzIuLC7yk2jb7cnibdt2iWaVZIH5mkMNWDJTaqTLAMr7GHySliwJi9YAe4BB6ZlX+xqcwx76vQtSWqcmYQMfkVvxLV/1BfuhYItieQUrGNIEEHuTMhA7h0JDg+BbXjQvh/uYgAgo+pBrIuM7pqN9AnCvB2c8RqXuCubTZnh6boXUBXGQojlzH7ZtEvl/2zTNa5uN1gIqubU8qEcUrI3QFbeTgZfaAhXHQLKIOnye7DV8UFYUAvoRHSwIDAQAB",
+  "description": "Detects phishing attacks using eye tracking and warns users in real-time",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs",
+    "cookies"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://*.clerk.accounts.dev/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "world": "MAIN",
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "webgazer/webgazer.js",
+        "page-webgazer-bootstrap.js",
+        "tf/tf.min.js",
+        "tf/tf-backend-wasm.min.js",
+        "tf/tfjs-backend-wasm.wasm",
+        "tf/tfjs-backend-wasm-simd.wasm",
+        "tf/tfjs-backend-wasm-threaded-simd.wasm",
+        "popup/popup.html",
+        "pages/auth/auth.html",
+        "pages/calibration/calibration.html"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
