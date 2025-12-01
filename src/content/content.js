@@ -1,5 +1,7 @@
+import { analyze } from "./detector/phishing-detector.js";
+
 (function() {
-  const WEBGAZER_PATH = 'webgazer/webgazer.js'; // dist path 
+  const WEBGAZER_PATH = 'webgazer/webgazer.js'; // dist path (no leading slash)
   const BOOTSTRAP_PATH = 'page-webgazer-bootstrap.js';  // dist path (emit/copy to dist/content/) 
   const TFJS_PATH = 'tf/tf.min.js';
   const TF_WASM_PATH = 'tf/tf-backend-wasm.min.js';
@@ -74,8 +76,29 @@
         break;
       case 'GAZE': {
         const el = document.elementFromPoint(msg.x, msg.y);
-        // TODO: phishing analysis with el, msg.x, msg.y
-        console.log('[GG] gaze', msg.x, msg.y, el);
+        if(analyze){
+            // here: phishing analysis with el, msg.x, msg.y
+            console.log('[GG] gaze', msg.x, msg.y, el);
+            return analyze(el).catch((resp)=>{
+              if(resp?.err){
+                console.error("[GG] gaze - error analyzing phishing text", resp?.err);
+              }
+              else{
+                // no actual error by classifier, just a debounce time or throttle to call LLM since it is expensive operation to call analyze frequently
+                console.log("[GG] Dropping this error and waiting for next call to analyze", resp);
+              }
+              return Promise.resolve(undefined);
+            }).then((resp)=>{
+              const analysis = resp?.risk;
+              const message = resp?.msg;
+              if(analysis && analysis !== "benign"){
+                console.warn("[GG] gaze - suspicious or risky text detected =>", el.textContent);
+                ensureBubble("ABNORMAL", message);
+              }
+            }).catch((err)=>{
+              console.error("[GG] gaze - error resolving analysis script", err);
+            });
+        }
         break;
       }
       default:
@@ -85,10 +108,14 @@
   });
 
   // floating bubble for maping eye
-  const ensureBubble = () => {
-    if (document.getElementById('gazeguard-bubble')) return;
-    const bubble = document.createElement('div');
-    bubble.id = 'gazeguard-bubble';
+  const ensureBubble = (type, message = "") => {
+    let bubble = document.getElementById('gazeguard-bubble');
+    let firstTime = false;
+    if(!bubble){
+      bubble = document.createElement('div');
+      bubble.id = 'gazeguard-bubble';
+      firstTime = true;
+    };
     Object.assign(bubble.style, {
       position: 'fixed',
       top: '20px',
@@ -96,7 +123,7 @@
       width: '48px',
       height: '48px',
       borderRadius: '50%',
-      background: 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)',
+      background: type === "NORMAL"? 'linear-gradient(135deg, #44ff54ff 0%, #058f00ff 100%)' : 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)',
       color: 'white',
       display: 'flex',
       alignItems: 'center',
@@ -105,16 +132,21 @@
       fontSize: '28px',
       zIndex: '2147483647',
       border: '2px solid rgba(255,255,255,0.9)',
-      boxShadow: '0 4px 12px rgba(255,0,0,0.35)',
+      boxShadow: '0 4px 12px ' + (type === "NORMAL" ? 'rgba(0, 255, 13, 0.35)' : 'rgba(255,0,0,0.35)'),
       cursor: 'pointer',
       userSelect: 'none'
     });
-    bubble.textContent = '!';
+    bubble.textContent = type === "NORMAL" ? '✓ (eye-emoji)' : '! (message from LLM)';
     bubble.title = 'Gazeguard';
-    bubble.addEventListener('click', () => {
-      alert('Gazeguard\n\nIf calibrationComplete is true, WebGazer will start in this tab.\nCheck the console for [GG] logs.');
-    });
+    if(firstTime){
+      bubble.addEventListener('click', () => {
+        if(type !== "NORMAL"){
+          alert(`Gazeguard\n\nPhishy text detected!: ${message}`);
+        }
+      });
+    }
     (document.body || document.documentElement).appendChild(bubble);
+    firstTime = false;
   };
 
   // initialization flow 
@@ -138,7 +170,7 @@
   };
 
   const init = () => {
-    ensureBubble();
+    ensureBubble('NORMAL');
 
     // Gate by calibration status
     chrome.storage.local.get('calibrationComplete', ({ calibrationComplete }) => {
