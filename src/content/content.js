@@ -76,9 +76,14 @@ import { analyze } from "./detector/phishing-detector.js";
         break;
       case 'GAZE': {
         const el = document.elementFromPoint(msg.x, msg.y);
+        
+        // move bubble
+        ggUpdateEyeDirection(msg.x, msg.y);
+
         if(analyze){
             // here: phishing analysis with el, msg.x, msg.y
             console.log('[GG] gaze', msg.x, msg.y, el);
+
             return analyze(el).catch((resp)=>{
               if(resp?.err){
                 console.error("[GG] gaze - error analyzing phishing text", resp?.err);
@@ -108,61 +113,262 @@ import { analyze } from "./detector/phishing-detector.js";
   });
 
   // floating bubble for maping eye
-  const ensureBubble = (type, message = "") => {
-    let bubble = document.getElementById('gazeguard-bubble');
-    let firstTime = false;
-    if(!bubble){
-      bubble = document.createElement('div');
-      bubble.id = 'gazeguard-bubble';
-      firstTime = true;
-    };
-    Object.assign(bubble.style, {
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      width: '48px',
-      height: '48px',
-      borderRadius: '50%',
-      background: type === "NORMAL"? 'linear-gradient(135deg, #44ff54ff 0%, #058f00ff 100%)' : 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)',
-      color: 'white',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontWeight: 'bold',
-      fontSize: '28px',
-      zIndex: '2147483647',
-      border: '2px solid rgba(255,255,255,0.9)',
-      boxShadow: '0 4px 12px ' + (type === "NORMAL" ? 'rgba(0, 255, 13, 0.35)' : 'rgba(255,0,0,0.35)'),
-      cursor: 'pointer',
-      userSelect: 'none'
-    });
-    bubble.textContent = type === "NORMAL" ? '✓ (eye-emoji)' : '! (message from LLM)';
-    bubble.title = 'Gazeguard';
-    if(firstTime){
-      bubble.addEventListener('click', () => {
-        if(type !== "NORMAL"){
-          alert(`Gazeguard\n\nPhishy text detected!: ${message}`);
-        }
-      });
-    }
-    (document.body || document.documentElement).appendChild(bubble);
-    firstTime = false;
-  };
+  // const ensureBubble = (type, message = "") => {
+  //   let bubble = document.getElementById('gazeguard-bubble');
+  //   let firstTime = false;
+  //   if(!bubble){
+  //     bubble = document.createElement('div');
+  //     bubble.id = 'gazeguard-bubble';
+  //     firstTime = true;
+  //   };
+  //   Object.assign(bubble.style, {
+  //     position: 'fixed',
+  //     top: '20px',
+  //     right: '20px',
+  //     width: '48px',
+  //     height: '48px',
+  //     borderRadius: '50%',
+  //     background: type === "NORMAL"? 'linear-gradient(135deg, #44ff54ff 0%, #058f00ff 100%)' : 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)',
+  //     color: 'white',
+  //     display: 'flex',
+  //     alignItems: 'center',
+  //     justifyContent: 'center',
+  //     fontWeight: 'bold',
+  //     fontSize: '28px',
+  //     zIndex: '2147483647',
+  //     border: '2px solid rgba(255,255,255,0.9)',
+  //     boxShadow: '0 4px 12px ' + (type === "NORMAL" ? 'rgba(0, 255, 13, 0.35)' : 'rgba(255,0,0,0.35)'),
+  //     cursor: 'pointer',
+  //     userSelect: 'none'
+  //   });
+  //   bubble.textContent = type === "NORMAL" ? '✓ (eye-emoji)' : '! (message from LLM)';
+  //   bubble.title = 'Gazeguard';
+  //   if(firstTime){
+  //     bubble.addEventListener('click', () => {
+  //       if(type !== "NORMAL"){
+  //         alert(`Gazeguard\n\nPhishy text detected!: ${message}`);
+  //       }
+  //     });
+  //   }
+  //   (document.body || document.documentElement).appendChild(bubble);
+  //   firstTime = false;
+  // };
 
+  
+// EYE BUBBLE UI (NEW)
+// -------------------------------
+let ggBubble = null;
+let ggBubbleState = "NORMAL";
+let ggBubbleMessage = "";
+let ggNoticeTimeout = null;
+
+let ggMsgEl = null;
+let ggPupils = [];
+
+// control pupil motion (x,y)
+function ggUpdateEyeDirection(x, y) {
+  if (!ggBubble || ggPupils.length === 0) return;
+
+  const vw = window.innerWidth || 1;
+  const vh = window.innerHeight || 1;
+
+  const nx = (x / vw - 0.5) * 2;
+  const ny = (y / vh - 0.5) * 2;
+
+  const MAX_OFFSET = 6;
+  const offsetX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, nx * MAX_OFFSET));
+  const offsetY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, ny * MAX_OFFSET));
+
+  ggPupils.forEach(p => {
+    p.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+  });
+}
+
+// create the bubble once
+function ggCreateBubbleIfNeeded() {
+  if (ggBubble) return;
+
+  ggBubble = document.createElement("div");
+  ggBubble.id = "gazeguard-bubble";
+
+  Object.assign(ggBubble.style, {
+    position: "fixed",
+    top: "20px",
+    right: "20px",
+    width: "150px",
+    height: "100px",
+    zIndex: "2147483647",
+    cursor: "pointer",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "22px",
+    background: "linear-gradient(145deg, rgba(220,255,245,0.75), rgba(190,240,220,0.55))",
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 8px 20px rgba(0,0,0,0.18)",
+    transition: "background 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease",
+    animation: "ggBubbleBreath 4s ease-in-out infinite"
+  });
+
+  // breathing animation (subtle inflate/deflate)
+  const breathAnim = document.createElement("style");
+  breathAnim.textContent = `
+    @keyframes ggBubbleBreath {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    @keyframes ggBlink {
+      0%, 96%, 100% { transform: scaleY(1); }
+      97% { transform: scaleY(0.15); }
+    }
+  `;
+  document.head.appendChild(breathAnim);
+
+  // ---- Eyes ----
+  const eyesWrapper = document.createElement("div");
+  Object.assign(eyesWrapper.style, {
+    display: "flex",
+    gap: "14px",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: "4px"
+  });
+
+  function makeEye() {
+    const eye = document.createElement("div");
+    Object.assign(eye.style, {
+      width: "42px",
+      height: "28px",
+      borderRadius: "50px",
+      background: "radial-gradient(circle at 30% 30%, #ffffff, #e8e8e8)",
+      position: "relative",
+      overflow: "hidden",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "inset -2px -3px 6px rgba(0,0,0,0.15), inset 2px 3px 5px rgba(255,255,255,0.8)",
+      animation: "ggBlink 6s infinite"
+    });
+
+    // glossy highlight
+    const shine = document.createElement("div");
+    Object.assign(shine.style, {
+      width: "18px",
+      height: "10px",
+      borderRadius: "50%",
+      background: "rgba(255,255,255,0.8)",
+      position: "absolute",
+      top: "5px",
+      left: "8px",
+      filter: "blur(2px)",
+      opacity: "0.9"
+    });
+    eye.appendChild(shine);
+
+    const pupil = document.createElement("div");
+    Object.assign(pupil.style, {
+      width: "12px",
+      height: "12px",
+      borderRadius: "50%",
+      background: "radial-gradient(circle, #000 40%, #333 100%)",
+      boxShadow: "0 0 6px rgba(0,0,0,0.4)",
+      transition: "transform 0.07s linear"
+    });
+
+    ggPupils.push(pupil);
+    eye.appendChild(pupil);
+
+    return eye;
+  }
+
+  eyesWrapper.appendChild(makeEye());
+  eyesWrapper.appendChild(makeEye());
+
+  // --- message area ---
+  ggMsgEl = document.createElement("div");
+  Object.assign(ggMsgEl.style, {
+    minHeight: "20px",
+    maxWidth: "130px",
+    fontSize: "12px",
+    lineHeight: "1.25",
+    textAlign: "center",
+    color: "#0b3b2f",
+    padding: "0 6px",
+    opacity: "0",
+    fontWeight: "600",
+    transition: "opacity 0.25s ease"
+  });
+
+  ggBubble.appendChild(eyesWrapper);
+  ggBubble.appendChild(ggMsgEl);
+
+  ggBubble.addEventListener("click", () => {
+    if (ggBubbleMessage) {
+      alert("Gazeguard\n\n" + ggBubbleMessage);
+    } else {
+      alert("Gazeguard is watching for phishing risks.");
+    }
+  });
+
+  document.body.appendChild(ggBubble);
+}
+
+// state change
+function ensureBubble(type = "NORMAL", message = "") {
+  ggCreateBubbleIfNeeded();
+
+  ggBubbleState = type;
+  ggBubbleMessage = message;
+
+  if (ggNoticeTimeout) {
+    clearTimeout(ggNoticeTimeout);
+    ggNoticeTimeout = null;
+  }
+
+  if (type === "NORMAL" || !message) {
+    // calm
+    ggBubble.style.background =
+      "linear-gradient(145deg, rgba(220,255,245,0.75), rgba(190,240,220,0.55))";
+    ggBubble.style.boxShadow = "0 8px 20px rgba(0,0,0,0.18)";
+    ggBubble.style.transform = "scale(1)";
+    ggMsgEl.textContent = "";
+    ggMsgEl.style.opacity = "0";
+    return;
+  }
+
+  // warning
+  ggBubble.style.background =
+    "linear-gradient(145deg, rgba(255,210,210,0.78), rgba(255,150,150,0.45))";
+  ggBubble.style.boxShadow = "0 8px 16px rgba(255,0,0,0.35)";
+  ggBubble.style.transform = "scale(1.05)";
+
+  ggMsgEl.textContent = message;
+  ggMsgEl.style.opacity = "1";
+
+  ggNoticeTimeout = setTimeout(() => {
+    ggNoticeTimeout = null;
+    ensureBubble("NORMAL", "");
+  }, 12000);
+}
+
+
+
+
+
+  // ____________________________________
   // initialization flow 
   const startEyeTracking = async () => {
     try {
       console.log('[GG] Injecting webgazer:', WEBGAZER_URL);
       const r1 = await injectWebgazerScript();
       console.log('[GG] webgazer injection result:', r1);
-
       console.log('[GG] Injecting bootstrap (CSP-safe external) with TF URLs:', BOOTSTRAP_URL);
       const r2 = await injectScriptWithAttrs('gg-webgazer-bootstrap', BOOTSTRAP_URL, {
         tfjs: TFJS_URL,
         tfwasm: TF_WASM_URL
       });
       console.log('[GG] bootstrap injection result:', r2);
-
       // from here, page-webgazer-bootstrap.js runs in PAGE world and posts messages back
     } catch (e) {
       console.error('[GG] injection failed', e);
