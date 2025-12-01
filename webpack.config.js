@@ -87,7 +87,7 @@ module.exports = {
         // - tfjs-backend-wasm-threaded-simd.wasm
         { from: './node_modules/@tensorflow/*.wasm', to: 'tf/[name][ext]', noErrorOnMissing: true },
       ]
-    }), 
+    }),
 
     // inject .env variables for build
     new webpack.DefinePlugin({
