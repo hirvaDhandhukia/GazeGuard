@@ -14,7 +14,7 @@ export async function handleClassificationRequest(text) {
       temperature: 0
     };
 
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    const resp = await fetch(process.env.OPENAI_API, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -26,7 +26,7 @@ export async function handleClassificationRequest(text) {
     const j = await resp.json();
     const raw = j.choices?.[0]?.message?.content || "";
     const json = JSON.parse(raw.match(/\{[\s\S]*\}/)[0]);
-    console.log("[GG] Received response from prompt as - ", json)
+    console.info("[GG] Received response from prompt as - ", json)
     return json;
   } catch (e) {
     return { error: String(e) };

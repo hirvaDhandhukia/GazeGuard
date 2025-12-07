@@ -19,22 +19,46 @@ const Calibration = () => {
   
   // webgazer state
   const [webgazerReady, setWebgazerReady] = useState(false);
+  
+  
+  useEffect(()=>{
+    if(user && process.env.BACKEND_URL && process.env.USERS_ENDPOINT){
+      console.info("[GG] logged in user is ", user);
+      const email = user?.emailAddresses?.length && user.emailAddresses[0].emailAddress;
+      chrome.runtime.sendMessage({ type: "fetchLocalhost", 
+        url: `${process.env.BACKEND_URL}${process.env.USERS_ENDPOINT}`, 
+        body: {
+          id: user.id,
+          email,
+          firstName: user.firstName,
+          lastName: user.lastName
+        },
+        method: 'POST'
+      }, (response) => {
+        if (response.success) {
+          console.info("[GG] Data from localhost:", response.data);
+        } else {
+          console.error("[GG] Error fetching from localhost:", response.error);
+        }
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     const initWebGazer = async () => {
       try {
-        console.log('1. Setting up TensorFlow backend...');
+        console.info('1. Setting up TensorFlow backend...');
         tf.env().set('WEBGL_PACK', false);
         tf.env().set('WEBGL_FORCE_F16_TEXTURES', false);
         // cpu fallback if wasm fails: debug
         try {
           await tf.setBackend('wasm');
           await tf.ready();
-          console.log('✓ TensorFlow backend: WASM');
+          console.info('✓ TensorFlow backend: WASM');
         } catch (err) {
           await tf.setBackend('cpu');
           await tf.ready();
-          console.log('✓ TensorFlow backend: CPU');
+          console.info('✓ TensorFlow backend: CPU');
         }
 
         if (typeof window.webgazer === "undefined") {
@@ -44,7 +68,7 @@ const Calibration = () => {
           // configure WebGazer on script load
           script.onload = () => {
             try {
-              console.log('✓ WebGazer loaded');
+              console.info('✓ WebGazer loaded');
 
               // calibration persistence across sessions
               window.saveDataAcrossSessions = true;
@@ -56,7 +80,7 @@ const Calibration = () => {
 
                 // webgazer begin track
               window.webgazer.begin();
-              console.log('!! WebGazer ready');
+              console.info('!! WebGazer ready');
               setWebgazerReady(true);
             } catch (err) {
               setError('Failed to initialize WebGazer: ' + err.message);

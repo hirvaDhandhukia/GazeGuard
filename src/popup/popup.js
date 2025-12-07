@@ -1,8 +1,8 @@
 (function() {
-  console.log('Popup loaded');
+  console.info('Popup loaded');
 
   const openAuthTab = () => {
-    console.log('Opening auth in new tab...');
+    console.info('Opening auth in new tab...');
     
     const authUrl = chrome.runtime.getURL('/pages/auth/auth.html');
     
@@ -10,7 +10,7 @@
       url: authUrl,
       active: true
     }, (tab) => {
-      console.log('✓ Auth tab opened');
+      console.info('✓ Auth tab opened');
       // close popup after brief delay
       setTimeout(() => window.close(), 100);
     });
