@@ -1,4 +1,5 @@
 import { analyze } from "./detector/phishing-detector.js";
+import { updateBubbleEyeDirection, showBubbleState } from "./bubble/bubble.js";
 
 (function() {
   const WEBGAZER_PATH = 'webgazer/webgazer.js'; // dist path (no leading slash)
@@ -77,8 +78,8 @@ import { analyze } from "./detector/phishing-detector.js";
       case 'GAZE': {
         const el = document.elementFromPoint(msg.x, msg.y);
         
-        // move bubble
-        ggUpdateEyeDirection(msg.x, msg.y);
+        // bubble: eye movement callback
+        updateBubbleEyeDirection(msg.x, msg.y);
 
         if(analyze){
             // here: phishing analysis with el, msg.x, msg.y
@@ -99,7 +100,7 @@ import { analyze } from "./detector/phishing-detector.js";
               const message = resp?.msg;
               if(analysis && analysis !== "benign"){
                 console.warn("[GG] gaze - suspicious or risky text detected =>", el.textContent);
-                ensureBubble("ABNORMAL", message);
+                showBubbleState("ABNORMAL", message);
               }
               // return Promise.resolve(resp);
             }).catch((err)=>{
@@ -115,182 +116,6 @@ import { analyze } from "./detector/phishing-detector.js";
   });
 
 
-let ggBubble = null;
-let ggNoticeTimeout = null;
-
-let ggMsgEl = null;
-let ggPupils = [];
-
-// x,y -> small offset for iris movement
-function ggUpdateEyeDirection(x, y) {
-  if (!ggBubble || ggPupils.length === 0) return;
-
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  const nx = (x / vw - 0.5) * 2;
-  const ny = (y / vh - 0.5) * 2;
-
-  const MAX_OFFSET_X = 6;
-  const MAX_OFFSET_Y = 4;
-
-  const offsetX = Math.max(-MAX_OFFSET_X, Math.min(MAX_OFFSET_X, nx * MAX_OFFSET_X));
-  const offsetY = Math.max(-MAX_OFFSET_Y, Math.min(MAX_OFFSET_Y, ny * MAX_OFFSET_Y));
-
-  ggPupils.forEach(p => {
-    p.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-  });
-}
-
-function ggCreateBubbleIfNeeded() {
-  if (ggBubble) return;
-
-  ggBubble = document.createElement("div");
-  Object.assign(ggBubble.style, {
-    position: "fixed",
-    top: "20px",
-    right: "20px",
-    width: "170px",
-    minHeight: "70px",
-    zIndex: "2147483647",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    paddingTop: "6px",
-    borderRadius: "20px",
-    background: "linear-gradient(145deg, rgba(240,255,245,0.85), rgba(205,235,225,0.65))",
-    backdropFilter: "blur(10px)",
-    boxShadow: "0 8px 18px rgba(0,0,0,0.18)",
-    transition: "background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease"
-  });
-
-  // ---- Eyes wrapper ----
-  const eyesWrapper = document.createElement("div");
-  Object.assign(eyesWrapper.style, {
-    display: "flex",
-    gap: "6px",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: "4px"
-  });
-
-  // Create eye
-  function makeEye() {
-    const eye = document.createElement("div");
-    Object.assign(eye.style, {
-      width: "34px",
-      height: "40px",
-      borderRadius: "50%",
-      background: "white",
-      border: "3px solid #777",
-      overflow: "hidden",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      position: "relative"
-    });
-
-    // Iris (oval, brown)
-    const iris = document.createElement("div");
-    Object.assign(iris.style, {
-      width: "20px",
-      height: "28px",
-      borderRadius: "50%",
-      background: "radial-gradient(circle at 30% 30%, #7a5527, #3e260f 65%)",
-      position: "absolute",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      transition: "transform 0.07s linear"
-    });
-
-    // Pupil (smaller)
-    const pupil = document.createElement("div");
-    Object.assign(pupil.style, {
-      width: "10px",
-      height: "14px",
-      borderRadius: "50%",
-      background: "#000"
-    });
-
-    // Highlight
-    const shine = document.createElement("div");
-    Object.assign(shine.style, {
-      width: "6px",
-      height: "6px",
-      borderRadius: "50%",
-      background: "white",
-      opacity: "0.8",
-      position: "absolute",
-      top: "4px",
-      left: "5px"
-    });
-
-    iris.appendChild(pupil);
-    iris.appendChild(shine);
-    eye.appendChild(iris);
-
-    ggPupils.push(iris);
-    return eye;
-  }
-
-  eyesWrapper.appendChild(makeEye());
-  eyesWrapper.appendChild(makeEye());
-
-  // ---- Message area ----
-  ggMsgEl = document.createElement("div");
-  Object.assign(ggMsgEl.style, {
-    minHeight: "18px",
-    maxWidth: "150px",
-    fontSize: "11px",
-    lineHeight: "1.25",
-    color: "#0b3b2f",
-    textAlign: "center",
-    padding: "4px 6px",
-    opacity: "0",
-    transition: "opacity 0.25s ease",
-    marginTop: "3px",
-    marginBottom: "4px"
-  });
-
-  ggBubble.appendChild(eyesWrapper);
-  ggBubble.appendChild(ggMsgEl);
-  document.body.appendChild(ggBubble);
-}
-
-// update state
-function ensureBubble(type = "NORMAL", message = "") {
-  ggCreateBubbleIfNeeded();
-
-  if (ggNoticeTimeout) {
-    clearTimeout(ggNoticeTimeout);
-    ggNoticeTimeout = null;
-  }
-
-  if (type === "NORMAL" || !message) {
-    ggBubble.style.background = "linear-gradient(145deg, rgba(240,255,245,0.85), rgba(205,235,225,0.65))";
-    ggMsgEl.style.opacity = "0";
-    ggMsgEl.textContent = "";
-    return;
-  }
-
-  // Warning mode
-  ggBubble.style.background = "rgba(255,205,205,0.75)";
-  ggMsgEl.textContent = message;
-  ggMsgEl.style.opacity = "1";
-
-  // Auto-reset (8 sec)
-  ggNoticeTimeout = setTimeout(() => {
-    ensureBubble("NORMAL", "");
-  }, 12000);
-}
-
-
-
-
-
-  // ____________________________________
   // initialization flow 
   const startEyeTracking = async () => {
     try {
@@ -310,7 +135,7 @@ function ensureBubble(type = "NORMAL", message = "") {
   };
 
   const init = () => {
-    ensureBubble('NORMAL');
+    showBubbleState('NORMAL');
 
     // Gate by calibration status
     chrome.storage.local.get('calibrationComplete', ({ calibrationComplete }) => {
