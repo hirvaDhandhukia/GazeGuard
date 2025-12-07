@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { SignIn, SignUp, useAuth } from '@clerk/chrome-extension';
+import { SignIn, SignUp, useAuth, useUser } from '@clerk/chrome-extension';
 
 const Login = () => {
   // clerk auth state
   const { isSignedIn, isLoaded } = useAuth();
+  const { user, _ } = useUser();
 
   // state to toggle between Sign In and Sign Up views
   const [showSignUp, setShowSignUp] = useState(false);

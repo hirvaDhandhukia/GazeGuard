@@ -33,7 +33,7 @@
     // configure and initialize TensorFlow backend
     const setTFBackend = async () => {
       if (!(window.tf && window.tf.setBackend)) {
-        console.log('[GG] TFJS not present; proceeding with WebGazer defaults');
+        console.info('[GG] TFJS not present; proceeding with WebGazer defaults');
         return;
       }
 
@@ -55,12 +55,12 @@
       try {
         await window.tf.setBackend('wasm');
         await window.tf.ready();
-        console.log('[GG] TFJS backend: WASM');
+        console.info('[GG] TFJS backend: WASM');
       } catch (err) {
         console.warn('[GG] WASM backend failed, CPU fallback:', err);
         await window.tf.setBackend('cpu');
         await window.tf.ready();
-        console.log('[GG] TFJS backend: CPU');
+        console.info('[GG] TFJS backend: CPU');
       }
     };
 

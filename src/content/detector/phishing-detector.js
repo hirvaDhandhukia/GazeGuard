@@ -1,13 +1,10 @@
 import { handleClassificationRequest } from "./classifier";
 
-const FIXATION_TIME = 2000; // time (ms) the mouse must stay within the fixation radius
-const FIXATION_RADIUS = 60; // max distance (px) between gaze points for the same target
-const RATE_LIMIT_MS = 5000; // min delay betn two LLM calls
+const FIXATION_TIME = 1000; // time (ms) the mouse must stay within the fixation radius
+const RATE_LIMIT_MS = 2000; // min delay betn two LLM calls
 const CACHE_TTL = 1500000; // cache time-to-live for past analyze text
 
 let lastEl = null; // last DOM ele
-let lastX = null; 
-let lastY = null;
 let fixationStart = null; // user started fixating on current ele 
 let lastLLMCall = 0; // llm rate limiter
 
@@ -33,7 +30,7 @@ export function analyze(el) {
     fixationStart = null;
     return Promise.reject("[GG] No text to analyze");
   }
-
+  const textContent = el.textContent.toLowerCase().trim();
   if (el !== lastEl) {
     lastEl = el;
     fixationStart = performance.now();
@@ -44,8 +41,7 @@ export function analyze(el) {
   if (elapsed < FIXATION_TIME) return Promise.reject(`[GG] Waiting for ${FIXATION_TIME/1000} seconds before triggering analysis`);
 
   // prevent duplicate calls via hashing
-  const raw = el.textContent.trim();
-  const h = hashText(raw);
+  const h = hashText(textContent);
   cleanup();
 
   // return cached result
@@ -56,13 +52,35 @@ export function analyze(el) {
   if (now - lastLLMCall < RATE_LIMIT_MS) return Promise.reject(`[GG] Waiting for ${RATE_LIMIT_MS/1000} seconds before calling LLM again`);
 
   lastLLMCall = now;
-  seen.set(h, now);
 
   // call LLM
-  return handleClassificationRequest(el.textContent.toLowerCase())
+  return handleClassificationRequest(textContent)
   .then((resp)=>{
     if(resp && !resp.error){
       cache.set(h, resp);
+      seen.set(h, now);
+      return Promise.resolve(resp);
+    }
+    return Promise.reject(resp);
+  }).then((resp)=>{
+    if(resp && resp.risk && !resp.error){
+      console.info("[GG] Calling API to store response to DB", resp);
+      //To Do: call API
+      chrome.runtime.sendMessage({ type: "fetchLocalhost", 
+        url: `${process.env.BACKEND_URL}${process.env.DATA_ENDPOINT}`, 
+        body: {
+          id: h,
+          request: textContent,
+          response: resp
+        },
+        method: 'POST'
+      }, (eventResponse) => {
+        if (eventResponse.success) {
+          console.info("[GG] Data from localhost:", eventResponse.data);
+        } else {
+          console.error("[GG] Error fetching from localhost:", eventResponse.error);
+        }
+      });
       return Promise.resolve(resp);
     }
     return Promise.reject(resp);
