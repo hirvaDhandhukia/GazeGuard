@@ -324,3 +324,20 @@ export function showBubbleState(type = "NORMAL", message = "") {
     showBubbleState("NORMAL", "");
   }, 12000);
 }
+
+// highlight risky element on page
+export function highlightElement(el) {
+  if (!el) return;
+
+  // add visual emphasis
+  el.style.outline = "3px solid rgba(255, 0, 0, 0.6)";
+  el.style.outlineOffset = "4px";
+  el.style.transition = "outline 0.25s ease-in-out";
+
+  // fade/gone after 8 seconds
+  setTimeout(() => {
+    try {
+      el.style.outline = "";
+    } catch (_) {}
+  }, 8000);
+}

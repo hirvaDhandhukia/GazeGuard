@@ -12,6 +12,26 @@ const Login = () => {
   const CURR_URL = chrome.runtime.getURL('/pages/auth/auth.html');
 
   useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 100% !important;
+        background: #A1C2BD !important;
+      }
+      #root, #app {
+        height: 100% !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  useEffect(() => {
     // is clerk loaded?
     if (isLoaded && isSignedIn) {
       const calibrationUrl = chrome.runtime.getURL('/pages/calibration/calibration.html');
@@ -29,9 +49,9 @@ const Login = () => {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      minHeight: '100vh',
+      height: '100vh',
       background: '#A1C2BD',
-      padding: '20px'
+      overflow: 'hidden',
     }}>
       <div style={{ width: '100%', maxWidth: '400px' }}>
         {!showSignUp ? (
