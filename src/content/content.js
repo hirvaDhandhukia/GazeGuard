@@ -1,5 +1,5 @@
 import { analyze } from "./detector/phishing-detector.js";
-import { updateBubbleEyeDirection, showBubbleState } from "./bubble/bubble.js";
+import { updateBubbleEyeDirection, showBubbleState, highlightElement } from "./bubble/bubble.js";
 
 (function() {
   const WEBGAZER_PATH = 'webgazer/webgazer.js'; // dist path (no leading slash)
@@ -100,6 +100,13 @@ import { updateBubbleEyeDirection, showBubbleState } from "./bubble/bubble.js";
               const message = resp?.msg;
               if(analysis && analysis !== "benign"){
                 console.warn("[GG] gaze - suspicious or risky text detected =>", el.textContent);
+                
+                try {
+                  highlightElement(el); // highlight the risky element
+                } catch(e) {
+                  console.log("[GG] !! highlight failure:", e);
+                }
+                
                 showBubbleState("ABNORMAL", message);
               }
               // return Promise.resolve(resp);
