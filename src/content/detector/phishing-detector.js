@@ -1,4 +1,5 @@
 import { handleClassificationRequest } from "./classifier";
+import { heuristicClassification } from "../../utils/lexicalScreening.js";
 
 const FIXATION_TIME = 1000; // time (ms) the mouse must stay within the fixation radius
 const RATE_LIMIT_MS = 2000; // min delay betn two LLM calls
@@ -46,6 +47,12 @@ export function analyze(el) {
 
   // return cached result
   if (seen.has(h)) return Promise.resolve(cache.get(h));
+
+  // heuristic scan 
+  try {
+    const heuristic = heuristicClassification(textContent);
+    console.info("[GG] Heuristic scan score:", heuristic);
+  } catch (err) { console.warn("[GG] Heuristic scan error:", err);}
 
   // rate limit function to call llm
   const now = Date.now();
