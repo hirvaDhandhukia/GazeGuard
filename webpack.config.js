@@ -16,6 +16,7 @@ module.exports = {
     "page-webgazer-bootstrap": './src/content/page-webgazer-bootstrap.js',
     tfjs: './node_modules/@tensorflow/tfjs',
     "tfjs-backend": './node_modules/@tensorflow/tfjs-backend-wasm',
+    dashboard: './src/pages/dashboard/dashboard.js',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -67,6 +68,13 @@ module.exports = {
       template: './src/pages/calibration/calibration.html',
       filename: 'pages/calibration/calibration.html',
       chunks: ['calibration']
+    }),
+
+    // Generate dashboard.html
+    new HtmlWebpackPlugin({
+      template: './src/pages/dashboard/dashboard.html',
+      filename: 'pages/dashboard/dashboard.html',
+      chunks: ['dashboard']
     }),
 
     // Copy manifest.json and webgazer library (assets)

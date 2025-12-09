@@ -41,7 +41,8 @@
         "tf/tfjs-backend-wasm-threaded-simd.wasm",
         "popup/popup.html",
         "pages/auth/auth.html",
-        "pages/calibration/calibration.html"
+        "pages/calibration/calibration.html",
+        "pages/dashboard/dashboard.html"
       ],
       "matches": ["<all_urls>"]
     }

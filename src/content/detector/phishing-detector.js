@@ -1,6 +1,9 @@
 import { handleClassificationRequest } from "./classifier";
 import { heuristicClassification } from "../../utils/lexicalScreening.js";
 
+// store Clerk user id
+let clerkUserId = null;
+
 const FIXATION_TIME = 1000; // time (ms) the mouse must stay within the fixation radius
 const RATE_LIMIT_MS = 2000; // min delay betn two LLM calls
 const CACHE_TTL = 1500000; // cache time-to-live for past analyze text
@@ -23,6 +26,16 @@ function cleanup() {
     }
   }
 }
+
+// load user id from chrome storage
+chrome.storage.local.get("clerkUserId", (res) => {
+  if (res?.clerkUserId) {
+    clerkUserId = res.clerkUserId;
+    console.info("[GG] Clerk user ID loaded for detector:", clerkUserId);
+  } else {
+    console.warn("[GG] No clerkUserId found in storage");
+  }
+});
 
 export function analyze(el) {
 
@@ -78,7 +91,9 @@ export function analyze(el) {
         body: {
           id: h,
           request: textContent,
-          response: resp
+          response: resp, 
+          requestUrl: window.location.href,
+          clerkId: clerkUserId || null // inject mapped clerk id 
         },
         method: 'POST'
       }, (eventResponse) => {
