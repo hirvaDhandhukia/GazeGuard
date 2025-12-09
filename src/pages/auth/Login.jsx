@@ -66,50 +66,73 @@ const Login = () => {
       <div style={{ width: '100%', maxWidth: '400px' }}>
         {!showSignUp ? (
           <>
-            <SignIn withSignUp={false} forceRedirectUrl={CURR_URL} routing="hash" />
-            <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '14px' }}>
-              <span style={{ color: 'rgba(255,255,255,0.7)' }}>
-                Don't have an account?{' '}
+            <SignIn
+              withSignUp={false}  
+              forceRedirectUrl={CURR_URL}
+              routing="hash"
+              appearance={{
+                elements: {
+                  footerAction: { display: "none" }, 
+                  footer: { display: "none" } 
+                }
+              }}
+            />
+            <div style={{
+              marginTop: "20px",
+              textAlign: "center",
+              fontSize: "14px",
+              opacity: 0.85,
+            }}>
+              <span style={{ color: "white" }}>
+                Don't have an account?
               </span>
-              <button
-                onClick={() => setShowSignUp(true)}
+              <span
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#a8dadc',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  padding: 0
+                  marginLeft: "6px",
+                  color: "#F5FFFC",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  fontWeight: "500"
                 }}
+                onClick={() => setShowSignUp(true)}
               >
                 Create one
-              </button>
+              </span>
             </div>
           </>
         ) : (
           <>
-            <SignUp forceRedirectUrl={CURR_URL} routing="hash" />
-            <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '14px' }}>
-              <span style={{ color: 'rgba(255,255,255,0.7)' }}>
-                Already have an account?{' '}
+            <SignUp 
+              forceRedirectUrl={CURR_URL} 
+              routing="hash" 
+              appearance={{
+                elements: {
+                  footer: { display: "none" },
+                  footerAction: { display: "none" }
+                }
+              }}
+            />
+            <div style={{
+              marginTop: "20px",
+              textAlign: "center",
+              fontSize: "14px",
+              opacity: 0.85,
+            }}>
+              <span style={{ color: "white" }}>
+                Already have an account?
               </span>
-              <button
-                onClick={() => setShowSignUp(false)}
+              <span
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#a8dadc',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  padding: 0
+                  marginLeft: "6px",
+                  color: "#F5FFFC",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  fontWeight: "500"
                 }}
+                onClick={() => setShowSignUp(false)}
               >
                 Sign in
-              </button>
+              </span>
             </div>
           </>
         )}
