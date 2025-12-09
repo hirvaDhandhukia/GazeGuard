@@ -158,6 +158,54 @@ function createBubble() {
 
   bubble.appendChild(eyesWrapper);
   bubble.appendChild(messageEl);
+
+  // dashboard button
+  const dashBtn = document.createElement("button");
+  Object.assign(dashBtn.style, {
+    marginTop: "4px",
+    fontSize: "13px",
+    padding: "4px 10px",
+    borderRadius: "10px",
+    border: "1px solid #0b3b2f",
+    background: "#ffffffd9",
+    cursor: "pointer",
+    color: "#0b3b2f",
+    fontWeight: "600",
+    transition: "background 0.2s ease, color 0.2s ease"
+  });
+  dashBtn.textContent = "📊 Dashboard";
+  dashBtn.style.fontWeight = "600";
+  dashBtn.style.fontSize = "13px";
+  
+  // click to open dashboard
+  dashBtn.onclick = () => {
+    chrome.runtime.sendMessage({
+      type: "OPEN_DASHBOARD"
+    });
+  };
+  // dashBtn.onclick = () => {
+  //   const dashUrl = chrome.runtime.getURL("pages/dashboard/dashboard.html");
+  //   chrome.tabs.query({}, tabs => {
+  //     const existing = tabs.find(t => t.url && t.url.includes("pages/dashboard/dashboard.html"));
+  //     if (existing) {
+  //       chrome.tabs.update(existing.id, { active: true });
+  //     } else {
+  //       chrome.tabs.create({ url: dashUrl });
+  //     }
+  //   });
+  // };
+  
+  // hover style change
+  dashBtn.onmouseover = () => {
+    dashBtn.style.background = "#0b3b2f";
+    dashBtn.style.color = "white";
+  };
+  dashBtn.onmouseout = () => {
+    dashBtn.style.background = "#ffffffd9";
+    dashBtn.style.color = "#0b3b2f";
+  };
+  
+  bubble.appendChild(dashBtn);
   document.body.appendChild(bubble);
 
   applyPupilTransform();

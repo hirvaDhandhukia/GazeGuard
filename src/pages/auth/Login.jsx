@@ -31,6 +31,16 @@ const Login = () => {
     };
   }, []);
 
+  // persist clerk userid on localstorage once login is detected
+  useEffect(() => {
+    if (isLoaded && isSignedIn && user) {
+      chrome.storage.local.set({ clerkUserId: user.id }, () => {
+        console.info("[GG] Clerk user stored:", user.id);
+      });
+    }
+  }, [isLoaded, isSignedIn, user]);
+
+  // post login redirect to calibration page
   useEffect(() => {
     // is clerk loaded?
     if (isLoaded && isSignedIn) {

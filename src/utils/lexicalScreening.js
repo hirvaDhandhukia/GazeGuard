@@ -25,8 +25,8 @@ export function lexicalRiskScore(text) {
 export function heuristicClassification(text) {
   const score = lexicalRiskScore(text);
 
-  if (score >= 6) return { risk: "high", msg: "⚠️ Strong phishing indicators detected" };
-  if (score >= 3) return { risk: "medium", msg: "⚠️ Suspicious phrasing observed" };
+  if (score >= 6) return { risk: "high", msg: "Strong phishing indicators detected" };
+  if (score >= 3) return { risk: "medium", msg: "Suspicious phrasing observed" };
 
   return { risk: "benign", msg: "" };
 }
