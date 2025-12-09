@@ -92,6 +92,7 @@ export function analyze(el) {
           id: h,
           request: textContent,
           response: resp, 
+          requestUrl: window.location.href,
           clerkId: clerkUserId || null // inject mapped clerk id 
         },
         method: 'POST'
